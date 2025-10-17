@@ -38,7 +38,6 @@ try:
         CEILING(SUM(bf.quantidadenegociada) / NULLIF(COUNT(bf.datafaturamento), 0)) AS Itens_por_Pedidos,
         MAX(bf.datafaturamento) AS ultima_venda,
         
-        -- 👇 Identificar se é grupo real ou cliente individual
         CASE 
             WHEN bc.grupoeconomico IS NULL OR bc.grupoeconomico = '' 
             THEN 'Cliente Individual' 
@@ -55,7 +54,6 @@ try:
         AND bc.uf = 'RJ'
         AND bc.grupoeconomico <> 'BMB MATERIAL'
     GROUP BY
-        -- 👇 Agrupar pela mesma lógica do CASE
         CASE 
             WHEN bc.grupoeconomico IS NULL OR bc.grupoeconomico = '' 
             THEN bc.nomecliente 

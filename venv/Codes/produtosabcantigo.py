@@ -25,42 +25,44 @@ try:
 
     query_vendas = """
     SELECT
-        bf.codigoproduto,
+        bfa.codigoproduto,
         bp.nomeproduto,
         bp.marca,
-        SUM(bf.precounitario * bf.quantidadenegociada) AS faturamento,
-        SUM(bf.quantidadenegociada) AS Qtd_Itens,
-        COUNT(bf.datafaturamento) AS Qtd_Pedidos,
-        CEILING(SUM(bf.quantidadenegociada) / COUNT(bf.datafaturamento)) AS Itens_por_Pedidos,
-        MAX(bf.datafaturamento) AS ultima_venda,
+        SUM(bfa.precounitario * bfa.quantidadenegociada) AS faturamento,
+        SUM(bfa.quantidadenegociada) AS Qtd_Itens,
+        COUNT(bfa.datafaturamento) AS Qtd_Pedidos,
+        CEILING(SUM(bfa.quantidadenegociada) / COUNT(bfa.datafaturamento)) AS Itens_por_Pedidos,
+        MAX(bfa.datafaturamento) AS ultima_venda,
 
         -- Subquery para pegar o último estoque
         (SELECT be.estoquenadata 
          FROM dbo.bi_estoque be 
-         WHERE be.codigoprincipal = bf.codigoproduto 
-         ORDER BY be.data DESC 
+         WHERE 
+            be.codigoprincipal = bfa.codigoproduto 
+         ORDER BY 
+            be.data DESC 
          LIMIT 1) AS estoque_na_data,
         (SELECT MAX(be.data) 
          FROM dbo.bi_estoque be 
-         WHERE be.codigoprincipal = bf.codigoproduto) AS data_estoque,
+         WHERE be.codigoprincipal = bfa.codigoproduto) AS data_estoque,
 
         CASE WHEN pb.permitecompra = TRUE THEN '[✓]' ELSE '[ ]' END AS P_Compra,
         CASE WHEN pb.permitevenda = TRUE THEN '[✓]' ELSE '[ ]' END AS P_Venda, 
         CASE WHEN pb.inativo = TRUE THEN '[✓]' ELSE '[ ]' END AS Inativo
 
     FROM
-        dbo.bi_fato AS bf
+        dbo.bi_fato_antigo AS bfa
     INNER JOIN
-        dbo.bi_produto AS bp ON bf.codigoproduto = bp.codigoproduto
+        dbo.bi_produto AS bp ON bfa.codigoproduto = bp.codigoproduto
     INNER JOIN
-        dbo.produtobase AS pb ON bf.codigoproduto = pb.codigoprincipal
+        dbo.produtobase AS pb ON bfa.codigoproduto = pb.codigoprincipal
     WHERE
-        bf.tipomovumento IN ('V', 'B')
-                     -- Ultimos 3 meses = AND bf.datafaturamento >= CURRENT_DATE - INTERVAL '3 months'
-        AND EXTRACT(MONTH FROM bf.datafaturamento) = 9
-        AND EXTRACT(YEAR FROM bf.datafaturamento) = EXTRACT(YEAR FROM CURRENT_DATE)
+        bfa.tipomovumento IN ('V', 'B')
+                     -- Ultimos 3 meses = AND bfa.datafaturamento >= CURRENT_DATE - INTERVAL '3 months'
+        AND EXTRACT(MONTH FROM bfa.datafaturamento) = 9
+        AND EXTRACT(YEAR FROM bfa.datafaturamento) = 2024
     GROUP BY
-        bf.codigoproduto, bp.nomeproduto, bp.marca, 
+        bfa.codigoproduto, bp.nomeproduto, bp.marca, 
         pb.permitecompra, pb.permitevenda, pb.inativo, pb.codigoprincipal
     ORDER BY
         faturamento DESC;
@@ -102,7 +104,7 @@ try:
 
             # Exportar para Excel
     data_atual = datetime.now().strftime("%Y-%m-%d_%H-%M")
-    nome_arquivo = f"fato{data_atual}.xlsx"
+    nome_arquivo = f"fato_antigo{data_atual}.xlsx"
 
     df_produto.to_excel(nome_arquivo, index=False)
     print(f"✅ Arquivo exportado: {nome_arquivo}")
